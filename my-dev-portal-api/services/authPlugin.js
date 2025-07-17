@@ -64,6 +64,14 @@ const verifyTokenJWTPublicKey = async (req, res, next) => {
       jwksRequestsPerMinute: 10, // Limit requests per minute
       jwksUri: `${issuer}/v1/keys`,
     });
+  } else if (provider === "Keycloak") {
+    issuer = `${process.env.KEYCLOAK_URL}/realms/${process.env.KEYCLOAK_REALM}`;
+    jwksClient = jwksRsa({
+      cache: true, // Enable caching
+      rateLimit: true, // Prevent excessive requests
+      jwksRequestsPerMinute: 10, // Limit requests per minute
+      jwksUri: `${issuer}/protocol/openid-connect/certs`,
+    });
   } else {
     throw new Error("Unsupported authentication provider");
   }
@@ -123,9 +131,16 @@ function getFinalChecker() {
         );
       }
       return verifyTokenJWTPublicKey;
+    case "Keycloak":
+      if (!process.env.KEYCLOAK_URL || !process.env.KEYCLOAK_REALM) {
+        throw new Error(
+          "using Keycloak provider, the KEYCLOAK_URL and KEYCLOAK_REALM must be provided in .env"
+        );
+      }
+      return verifyTokenJWTPublicKey;
     default:
       throw Error(
-        "Unsupported Auth Provider for dev-portal-api, please check AUTH_PROVIDER configuration in /my-dev-portal-api/.env"
+        "Unsupported Auth Provider for dev-portal-api, please check AUTH_PROVIDER configuration in /my-dev-portal-api/.env. Supported values: Auth0, Okta, Keycloak"
       );
   }
 }

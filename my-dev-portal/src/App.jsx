@@ -1,11 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LoginCallback } from "@okta/okta-react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { useKeycloak } from "@react-keycloak/web";
 
 import Dashboard from "./components/pages/dashboard/Dashboard";
 import Settings from "./components/pages/settings/Settings";
 import { OktaProviderWithNavigate } from "./OktaProviderWithNavigate";
 import { Auth0ProviderWithNavigate } from "./Auth0ProviderWithNavigate";
+import { KeycloakProviderWithNavigate } from "./KeycloakProviderWithNavigate";
 import Keys from "./components/pages/keys/Keys";
 import SecureRoute from "./components/okta/SecureRoute";
 import { AuthenticationGuard } from "./components/authentication-guard";
@@ -20,9 +22,13 @@ import Subscription from "./components/pages/subscription/Subscription";
 import { PageFooter } from "./components/page-footer";
 
 function App() {
-  const { isAuthenticated } = useAuth0();
+  const authProvider = import.meta.env.REACT_APP_AUTH_PROVIDER;
+  
+  // Only use Auth0 hook when provider is Auth0
+  const auth0Data = authProvider === "Auth0" ? useAuth0() : { isAuthenticated: false };
+  const { isAuthenticated } = auth0Data;
 
-  if (import.meta.env.REACT_APP_AUTH_PROVIDER === "Okta") {
+  if (authProvider === "Okta") {
     return (
       <div>
         <div>
@@ -94,7 +100,74 @@ function App() {
         <PageFooter />
       </div>
     );
-  } else if (import.meta.env.REACT_APP_AUTH_PROVIDER === "Auth0") {
+  } else if (authProvider === "Keycloak") {
+    return (
+      <div>
+        <div>
+          <BrowserRouter>
+            <KeycloakProviderWithNavigate>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/return" element={<Return />} />
+                <Route path="/setup" element={<Setup />} />
+                <Route path="/plans" element={<Plans />} />
+                <Route
+                  path="/checkout"
+                  element={
+                    <AuthenticationGuard>
+                      <Checkout />
+                    </AuthenticationGuard>
+                  }
+                />
+                <Route
+                  path="/return"
+                  element={
+                    <AuthenticationGuard>
+                      <Return />
+                    </AuthenticationGuard>
+                  }
+                />
+                <Route
+                  path="dashboard"
+                  element={
+                    <AuthenticationGuard>
+                      <Dashboard />
+                    </AuthenticationGuard>
+                  }
+                />
+                <Route
+                  path="settings"
+                  element={
+                    <AuthenticationGuard>
+                      <Settings />
+                    </AuthenticationGuard>
+                  }
+                />
+                <Route
+                  path="keys"
+                  element={
+                    <AuthenticationGuard>
+                      <Keys />
+                    </AuthenticationGuard>
+                  }
+                />
+                <Route
+                  path="subscriptions"
+                  element={
+                    <AuthenticationGuard>
+                      <Subscription />
+                    </AuthenticationGuard>
+                  }
+                />
+              </Routes>
+            </KeycloakProviderWithNavigate>
+          </BrowserRouter>
+        </div>
+        <PageFooter />
+      </div>
+    );
+  } else if (authProvider === "Auth0") {
     return (
       <div>
         <div>
@@ -149,7 +222,7 @@ function App() {
     return (
       <div className="App">
         Please check your env files, the REACT_APP_AUTH_PROVIDER variable must
-        be provided.
+        be provided. Supported values: "Auth0", "Okta", "Keycloak".
       </div>
     );
   }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useOktaAuth } from "@okta/okta-react";
+import { useKeycloak } from "@react-keycloak/web";
 import { useNavigate } from "react-router-dom";
 import { moesifIdentifyUserFrontEndIfPossible } from "../common/utils";
 
@@ -104,9 +105,45 @@ function useAuthAuth0Version() {
   };
 }
 
+function useAuthKeycloakVersion() {
+  const navigate = useNavigate();
+  const { keycloak, initialized } = useKeycloak();
+
+  const isAuthenticated = keycloak?.authenticated || false;
+  const isLoading = !initialized;
+  const user = keycloak?.tokenParsed;
+
+  const userEmail = user?.email || user?.preferred_username;
+  const idToken = keycloak?.token;
+  const accessToken = keycloak?.token;
+
+  useEffect(() => {
+    if (isAuthenticated && idToken) {
+      moesifIdentifyUserFrontEndIfPossible(idToken);
+    }
+  }, [isAuthenticated, idToken]);
+
+  const handleSignUp = async ({ returnTo }) => {
+    navigate(`/signup?return_to=${encodeURIComponent(returnTo)}`);
+  };
+
+  return {
+    isAuthenticated,
+    isLoading,
+    user,
+    idToken,
+    accessToken,
+    keycloakState: keycloak,
+    userEmail,
+    handleSignUp,
+  };
+}
+
 const useAuthCombined =
   import.meta.env.REACT_APP_AUTH_PROVIDER === "Okta"
     ? useAuthOktaVersion
+    : import.meta.env.REACT_APP_AUTH_PROVIDER === "Keycloak"
+    ? useAuthKeycloakVersion
     : useAuthAuth0Version;
 
 export default useAuthCombined;

@@ -17,6 +17,8 @@
     "@mui/material": "^5.14.2",
     "@okta/okta-auth-js": "^7.8.1",
     "@okta/okta-react": "^6.7.0",
+    "@react-keycloak/web": "^3.4.0",
+    "keycloak-js": "^23.0.0",
     "@stripe/react-stripe-js": "^2.1.0",
     "@stripe/stripe-js": "^1.52.1",
     "copy-to-clipboard": "^3.3.3",

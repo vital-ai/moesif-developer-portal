@@ -21,6 +21,10 @@ const {
 } = require("./services/moesifApis");
 
 const { authMiddleware } = require("./services/authPlugin");
+const {
+  createKeycloakUser,
+  getKeycloakUserByEmail,
+} = require("./services/keycloakApis");
 
 const { getApimProvisioningPlugin } = require("./config/pluginLoader");
 const {
@@ -215,6 +219,47 @@ app.post("/okta/register", jsonParser, async (req, res) => {
   } catch (error) {
     console.error("Error creating user:", error);
     res.status(500).json({ message: "Failed to create user" });
+  }
+});
+
+// Keycloak user registration endpoint
+app.post("/keycloak/register", jsonParser, async (req, res) => {
+  try {
+    const { firstName, lastName, email, password } = req.body;
+
+    // Check if user already exists
+    const existingUser = await getKeycloakUserByEmail(email);
+    if (existingUser) {
+      return res.status(409).json({ message: "User already exists" });
+    }
+
+    // Create user in Keycloak
+    const userInfo = {
+      email,
+      firstName,
+      lastName,
+      password,
+    };
+
+    const createdUser = await createKeycloakUser(userInfo);
+
+    res.status(201).json({
+      message: "User created successfully in Keycloak",
+      user: {
+        id: createdUser.id,
+        email: email,
+        firstName: firstName,
+        lastName: lastName,
+      },
+    });
+
+    console.log("User created successfully in Keycloak:", createdUser.id);
+  } catch (error) {
+    console.error("Error creating user in Keycloak:", error);
+    res.status(500).json({ 
+      message: "Failed to create user in Keycloak",
+      error: error.message 
+    });
   }
 });
 
